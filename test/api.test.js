@@ -2,7 +2,7 @@ const request = require('supertest');
 const assert = require('chai').assert;
 const app = require('../index'); // Import the app without starting the server
 
-describe('Safle API Tests', () => {
+describe('task API Tests', () => {
     it('should fetch all items', (done) => {
         request(app)
             .get('/tasks') // Fixed route
