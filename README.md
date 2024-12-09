@@ -69,7 +69,7 @@ http://localhost:5601 (Kibana, NOTE: need to create service account with a role 
 
 ## View the full documentation along here 
 
-https://docs.google.com/document/d/1CRkW-J2dwJ4sxXgs2Z4S_13b3B6Qf9yBXZEC7cibBpk/edit?usp=sharing
+https://docs.google.com/document/d/1xhTZ5yPmU6nFm6-d9sZGTM47XTDCmfacx0RDQomU_GI/edit?usp=sharing
 
 
 
