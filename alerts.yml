@@ -1,0 +1,20 @@
+groups:
+  - name: alert_rules
+    rules:
+      - alert: HighCPUUsage
+        expr: rate(node_cpu_seconds_total[5m]) > 0.8
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for the past 2 minutes."
+
+      - alert: AppDown
+        expr: up{job="app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application is down"
+          description: "The application is not reachable."

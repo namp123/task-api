@@ -1,0 +1,25 @@
+#This file tells Prometheus which targets to scrape metrics from.
+#looks for containers with the "app" label specified in docker-compose.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'app'
+    static_configs:
+      - targets: ['app:3000']
+
+  - job_name: 'db'
+    static_configs:
+      - targets: ['db:27017']
+        labels:
+          group: 'database'
+
+rule_files:
+  - "alerts.yml" #all prometheus alert rules are configured in this file
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+

@@ -1,0 +1,127 @@
+#deploying a multi container environment (both app and db containers)
+version: '3.8'
+
+services:
+  app: #container 1: app
+    build:
+      context: .
+    ports:
+      - "3000:3000" 
+    volumes:
+      - .:/usr/src/app 
+      - /usr/src/app/node_modules # Prevents overwriting node_modules
+    depends_on:
+      - db #makes sure db container is ready first
+    environment:
+      #commenting below line because we dont have a gcp account yet, hece can't fetch the exported db secrets from main.tf
+      #MONGO_URL: mongodb://$MONGODB_USERNAME:$MONGODB_PASSWORD@db:27017/tasksdb #connection url uses secrets variables (created in main.tf)
+      MONGO_URL: mongodb://db:27017/tasksdb #connection url (basic without gcp)
+    labels:
+      - "prometheus_job=app" #identifies targets so that they can be scraped
+    logging:  #configuring the application containers to send their logs to logstash using the inbuilt docker logging driver
+      driver: "gelf"
+      options:
+        gelf-address: "udp://172.20.0.9:5044"
+    networks:
+      - elk #to ensure both app and elk containers are on the same network so that they can communicate and app containers can send their logs to logstash
+
+  db: #container 2 : db
+    image: mongo:6.0 #db container image
+    container_name: mongodb 
+    ports:
+      - "27017:27017" 
+    volumes:
+      - mongo-data:/data/db 
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $MONGODB_USERNAME  # Use the env var for MongoDB username
+      MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASSWORD  # Use the env var for MongoDB password
+    networks:
+      - elk #ensure even db container is on the same network as elk containers so that they can communicate
+
+  prometheus: #container 3: prometheus
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alerts.yml:/etc/prometheus/alerts.yml
+    networks:
+      - elk
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+
+  grafana: #container 4: grafana
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_ADMIN_USERNAME=admin
+      - GF_ADMIN_PASSWORD=admin
+    networks:
+      - elk
+
+  alertmanager: #container 5: alertmanager
+    image: prom/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    networks:
+      - elk
+
+  elasticsearch: #container 6: elastic search
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=wzcxW6sN2mdYaHOMGhn5
+    networks:
+      - elk
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  logstash: #container 7: logstash (Logstash collects logs from different sources and sends it to Elasticsearch)
+    image: docker.elastic.co/logstash/logstash:8.5.0
+    environment:
+      - LOGSTASH_HTTP_PORT=5044
+    networks:
+      - elk
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch #logstash make sure elasticsearch container is ready first
+
+  kibana: #container 8: kibana
+    image: docker.elastic.co/kibana/kibana:8.5.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=wzcxW6sN2mdYaHOMGhn5
+    networks:
+      - elk
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch #kibana make sure elasticsearch container is ready first as it has to identify the host as shown in environment variable
+      
+
+networks:
+  elk:
+    driver: bridge
+    #external: true
+
+volumes:
+  mongo-data:
+  grafana-data:
+  esdata:
+    driver: local
+
