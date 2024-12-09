@@ -70,7 +70,7 @@ http://localhost:9090/targets (View targets on Prometheus)
 
 http://localhost:3001 (Check out the "APP Monitoring" dashboard on Grafana)  
 
-http://localhost:9200 (Elasticsearch)  
+http://localhost:9200 (Elasticsearch) [username: elastic, password: wzcxW6sN2mdYaHOMGhn5]
 
 http://localhost:5601 (Kibana, NOTE: need to create service account with a role attatched to it for it to work)
 
