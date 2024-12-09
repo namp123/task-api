@@ -1,31 +1,30 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const client = require('prom-client');
 
 const app = express();
 app.use(bodyParser.json());
 
-// establish MongoDB connection first
+// MongoDB connection
 const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017/tasksdb';
-
-mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose
+    .connect(mongoUrl)
     .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+    .catch((err) => console.error('MongoDB connection error:', err));
 
-//schema and model for db
+// Task schema and model
 const taskSchema = new mongoose.Schema({
     name: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
 });
-
-//home page
-app.get('/', (req, res) => {
-    res.send('<h1>Welcome to the Namithas Task Manager!</h1><p>Manage your tasks here.</p><a href="/tasks">View Tasks</a>');
-});
-
 const Task = mongoose.model('Task', taskSchema);
 
-// GET /tasks - Retrieve all tasks
+// Routes
+app.get('/', (req, res) => {
+    res.send('<h1>Welcome to Namitha\'s Task Manager!</h1><p>Manage your tasks here.</p><a href="/tasks">View Tasks</a>');
+});
+
 app.get('/tasks', async (req, res) => {
     try {
         const tasks = await Task.find();
@@ -35,7 +34,6 @@ app.get('/tasks', async (req, res) => {
     }
 });
 
-// POST /tasks - Add a new task
 app.post('/tasks', async (req, res) => {
     try {
         const { name } = req.body;
@@ -51,34 +49,36 @@ app.post('/tasks', async (req, res) => {
     }
 });
 
-//EXPOSING PROMETHEUS DEFAULT AND CUSTOM METRICS FOR MY APPLICATION----------------
-const client = require('prom-client');
-const register = new client.Registry(); //creating a registry to store metrics
-client.collectDefaultMetrics({ register }); //create default metrics
-// Custom metrics (total number of HTTP requests)
+// Prometheus metrics
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
 const httpRequestCounter = new client.Counter({
     name: 'http_requests_total',
     help: 'Total number of HTTP requests',
     labelNames: ['method', 'route', 'status'],
-  });
-register.registerMetric(httpRequestCounter); //registering this custom metric
+});
+register.registerMetric(httpRequestCounter);
+
 app.use((req, res, next) => {
     res.on('finish', () => {
-      httpRequestCounter.labels(req.method, req.path, res.statusCode).inc();
+        httpRequestCounter.labels(req.method, req.path, res.statusCode).inc();
     });
     next();
 });
-// Expose metrics at /metrics endpoint
+
 app.get('/metrics', async (req, res) => {
     res.set('Content-Type', register.contentType);
     res.send(await register.metrics());
 });
 
-  
+// Export the app (without starting the server)
+module.exports = app;
 
-
-
-const port = 3000;
-app.listen(port, () => {
-    console.log(`task Api App is running on http://localhost:${port}`);
-});
+// Start the server only if this file is executed directly
+if (require.main === module) {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log(`Safle Api App is running on http://localhost:${port}`);
+    });
+}
