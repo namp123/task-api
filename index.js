@@ -79,6 +79,6 @@ module.exports = app;
 if (require.main === module) {
     const port = process.env.PORT || 3000;
     app.listen(port, () => {
-        console.log(`Safle Api App is running on http://localhost:${port}`);
+        console.log(`task Api App is running on http://localhost:${port}`);
     });
 }
