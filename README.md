@@ -34,6 +34,14 @@ on your browser now open -> http://localhost:3000
 
 There you have it, the task manager on your laptop! :smile: :rocket: :tada:
 
+You can now run mocha tests with the below command:
+```
+   cd test
+```
+```
+   npm test
+```
+
 ## Adding a new task to the task manager (uses the POST API)
 From your terminal run  
 ```
