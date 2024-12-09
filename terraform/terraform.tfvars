@@ -1,0 +1,5 @@
+project_id        = "your-gcp-project-id"
+region            = "us-central1"
+zone              = "us-central1-a"
+mongodb_project_id = "your-mongodb-atlas-project-id"
+mongodb_region     = "US_EAST_1"
